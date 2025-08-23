@@ -1,4 +1,4 @@
-# AI 摘要小幫手 (Summarizer)
+# 摘要小幫手 (Summarizer)
 
 企業級 AI 文件摘要系統，支援 OpenAI 和 Ollama API，提供安全、高效的文件摘要服務。
 
@@ -144,19 +144,21 @@ flowchart TD
 ### 環境需求
 
 - .NET 8.0 SDK
-- Node.js 18+ 
+- Node.js 18+
 - SQLite (開發) / SQL Server Express (生產)
 - Ollama (可選，本地 AI 服務)
 
 ### 安裝步驟
 
 1. **複製專案**
+
    ```bash
    git clone <repository-url>
    cd Summarizer
    ```
 
 2. **後端設定**
+
    ```bash
    # 還原 NuGet 套件
    dotnet restore
@@ -167,6 +169,7 @@ flowchart TD
    ```
 
 3. **資料庫初始化**
+
    ```bash
    # 建立 Migration
    dotnet ef migrations add InitialCreate --context SummarizerDbContext
@@ -176,12 +179,14 @@ flowchart TD
    ```
 
 4. **前端設定**
+
    ```bash
    cd ClientApp
    npm install
    ```
 
 5. **啟動開發服務器**
+
    ```bash
    # 後端 (在根目錄)
    dotnet run
@@ -439,6 +444,7 @@ Summarizer/
 ### IIS 部署
 
 1. **建置應用程式**
+
    ```bash
    dotnet publish --configuration Release --output ./publish
    ```
@@ -449,6 +455,7 @@ Summarizer/
    - 啟用 Windows 認證
 
 3. **設定 web.config**
+
    ```xml
    <configuration>
      <system.webServer>
@@ -517,8 +524,8 @@ ENTRYPOINT ["dotnet", "Summarizer.dll"]
 ## 📞 聯絡資訊
 
 - **專案維護者**: Tenyi
-- **Email**: tenyi@sinotech.org.tw
-- **專案連結**: https://github.com/tenyi/Summarizer.git
+- **Email**: <tenyi@sinotech.org.tw>
+- **專案連結**: <https://github.com/tenyi/Summarizer.git>
 
 ---
 
