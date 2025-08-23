@@ -26,3 +26,15 @@ interface SummarizeResponse {
 export const summarizeText = (data: SummarizeRequest): Promise<SummarizeResponse> => {
   return apiClient.post('/api/summarize', data);
 };
+
+// 上傳檔案進行摘要的功能
+export const uploadFileForSummary = (file: File): Promise<SummarizeResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  return apiClient.post('/api/summarize/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};

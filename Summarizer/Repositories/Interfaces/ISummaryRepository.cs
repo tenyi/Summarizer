@@ -12,6 +12,7 @@ namespace Summarizer.Repositories.Interfaces
         Task<SummaryRecord> CreateAsync(SummaryRecord record);
         Task<SummaryRecord?> GetByIdAsync(int id);
         Task<IEnumerable<SummaryRecord>> GetRecentAsync(int count = 10);
+        Task<SummaryRecord?> GetOldestAsync();
         Task<int> GetTotalCountAsync();
         Task<bool> HealthCheckAsync();
     }

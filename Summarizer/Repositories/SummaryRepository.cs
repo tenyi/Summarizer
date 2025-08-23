@@ -124,6 +124,40 @@ namespace Summarizer.Repositories
             throw new InvalidOperationException($"經過 {maxRetries} 次重試後仍無法查詢記錄");
         }
 
+        public async Task<SummaryRecord?> GetOldestAsync()
+        {
+            const int maxRetries = 3;
+            const int baseDelayMs = 500;
+
+            for (int attempt = 0; attempt < maxRetries; attempt++)
+            {
+                try
+                {
+                    var result = await _context.SummaryRecords
+                        .OrderBy(r => r.CreatedAt)
+                        .FirstOrDefaultAsync();
+                    
+                    _logger.LogDebug("查詢最舊的摘要記錄，結果: {Found}", result != null ? $"ID {result.Id}" : "未找到");
+                    return result;
+                }
+                catch (Exception ex) when (attempt < maxRetries - 1)
+                {
+                    _logger.LogWarning("查詢最舊摘要記錄失敗 (嘗試 {Attempt}/{MaxRetries}): {Error}", 
+                        attempt + 1, maxRetries, ex.Message);
+                    
+                    var delay = TimeSpan.FromMilliseconds(baseDelayMs * Math.Pow(2, attempt));
+                    await Task.Delay(delay);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "查詢最舊摘要記錄時發生錯誤");
+                    throw;
+                }
+            }
+            
+            throw new InvalidOperationException($"經過 {maxRetries} 次重試後仍無法查詢最舊記錄");
+        }
+
         public async Task<int> GetTotalCountAsync()
         {
             const int maxRetries = 3;
