@@ -1,10 +1,10 @@
-# AI 總結助手 (Summarizer)
+# AI 摘要小幫手 (Summarizer)
 
 企業級 AI 文件摘要系統，支援 OpenAI 和 Ollama API，提供安全、高效的文件摘要服務。
 
 ## 📋 專案概述
 
-AI 總結助手是一個現代化的全端 Web 應用程式，專為企業內部使用而設計。系統整合了多種 AI 服務，提供智慧文件摘要功能，並具備完整的資料持久化和使用者認證機制。
+AI 摘要小幫手是一個現代化的全端 Web 應用程式，專為企業內部使用而設計。系統整合了多種 AI 服務，提供智慧文件摘要功能，並具備完整的資料持久化和使用者認證機制。
 
 ### ✨ 主要功能
 
@@ -116,7 +116,7 @@ flowchart TD
 | 技術 | 版本 | 用途 |
 |------|------|------|
 | .NET | 8.0 | 核心框架 |
-| ASP.NET Core | 8.0 | Web API 框架 |
+| ASP\.NET Core | 8.0 | Web API 框架 |
 | Entity Framework Core | 8.0 | ORM 資料存取 |
 | SQLite | 3.x | 開發資料庫 |
 | SQL Server Express | 2022 | 生產資料庫 |
@@ -516,10 +516,10 @@ ENTRYPOINT ["dotnet", "Summarizer.dll"]
 
 ## 📞 聯絡資訊
 
-- **專案維護者**: [您的名稱]
-- **Email**: [您的信箱]
-- **專案連結**: [GitHub Repository URL]
+- **專案維護者**: Tenyi
+- **Email**: tenyi@sinotech.org.tw
+- **專案連結**: https://github.com/tenyi/Summarizer.git
 
 ---
 
-© 2025 AI 總結助手. All rights reserved.
+© 2025 AI 摘要小幫手. All rights reserved.
