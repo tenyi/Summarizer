@@ -259,4 +259,115 @@ public class BatchProgressNotificationService : IBatchProgressNotificationServic
                 batchId, partialResultId);
         }
     }
+
+    /// <summary>
+    /// 發送恢復完成通知
+    /// </summary>
+    public async Task NotifyRecoveryCompleted(Guid batchId, bool success, TimeSpan duration, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var groupName = $"batch_{batchId}";
+            
+            await _hubContext.Clients.Group(groupName).SendAsync(
+                "RecoveryCompleted",
+                new
+                {
+                    BatchId = batchId,
+                    Success = success,
+                    Duration = duration.TotalSeconds,
+                    Message = success ? "系統恢復成功" : "系統恢復部分失敗",
+                    Timestamp = DateTime.UtcNow
+                },
+                cancellationToken);
+
+            _logger.LogInformation("已發送恢復完成通知，BatchId: {BatchId}，成功: {Success}，耗時: {Duration}",
+                batchId, success, duration);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "發送恢復完成通知失敗，BatchId: {BatchId}", batchId);
+        }
+    }
+
+    /// <summary>
+    /// 發送UI重置通知
+    /// </summary>
+    public async Task NotifyUIReset(Guid batchId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var groupName = $"batch_{batchId}";
+            
+            await _hubContext.Clients.Group(groupName).SendAsync(
+                "UIReset",
+                new
+                {
+                    BatchId = batchId,
+                    Message = "前端介面已重置",
+                    Timestamp = DateTime.UtcNow
+                },
+                cancellationToken);
+
+            _logger.LogDebug("已發送UI重置通知，BatchId: {BatchId}", batchId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "發送UI重置通知失敗，BatchId: {BatchId}", batchId);
+        }
+    }
+
+    /// <summary>
+    /// 發送進度重置通知
+    /// </summary>
+    public async Task NotifyProgressReset(Guid batchId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var groupName = $"batch_{batchId}";
+            
+            await _hubContext.Clients.Group(groupName).SendAsync(
+                "ProgressReset",
+                new
+                {
+                    BatchId = batchId,
+                    Message = "處理進度已重置",
+                    Timestamp = DateTime.UtcNow
+                },
+                cancellationToken);
+
+            _logger.LogDebug("已發送進度重置通知，BatchId: {BatchId}", batchId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "發送進度重置通知失敗，BatchId: {BatchId}", batchId);
+        }
+    }
+
+    /// <summary>
+    /// 發送UI恢復完成通知
+    /// </summary>
+    public async Task NotifyUIRecoveryCompleted(Guid batchId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var groupName = $"batch_{batchId}";
+            
+            await _hubContext.Clients.Group(groupName).SendAsync(
+                "UIRecoveryCompleted",
+                new
+                {
+                    BatchId = batchId,
+                    Message = "前端介面恢復完成",
+                    Timestamp = DateTime.UtcNow
+                },
+                cancellationToken);
+
+            _logger.LogDebug("已發送UI恢復完成通知，BatchId: {BatchId}", batchId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "發送UI恢復完成通知失敗，BatchId: {BatchId}", batchId);
+        }
+    }
 }

@@ -82,6 +82,11 @@ public class PartialResult
     /// 用戶對部分結果的評論或註記
     /// </summary>
     public string UserComment { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 是否已完成（已接受或已拒絕）
+    /// </summary>
+    public bool IsFinalized => Status == PartialResultStatus.Accepted || Status == PartialResultStatus.Rejected || Status == PartialResultStatus.Expired;
 }
 
 /// <summary>

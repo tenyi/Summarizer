@@ -64,4 +64,34 @@ public interface IBatchProgressNotificationService
     /// <param name="partialResultId">部分結果 ID</param>
     /// <param name="cancellationToken">取消令牌</param>
     Task NotifyPartialResultSavedAsync(Guid batchId, Guid partialResultId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 發送恢復完成通知
+    /// </summary>
+    /// <param name="batchId">批次處理 ID</param>
+    /// <param name="success">恢復是否成功</param>
+    /// <param name="duration">恢復耗時</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    Task NotifyRecoveryCompleted(Guid batchId, bool success, TimeSpan duration, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 發送UI重置通知
+    /// </summary>
+    /// <param name="batchId">批次處理 ID</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    Task NotifyUIReset(Guid batchId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 發送進度重置通知
+    /// </summary>
+    /// <param name="batchId">批次處理 ID</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    Task NotifyProgressReset(Guid batchId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 發送UI恢復完成通知
+    /// </summary>
+    /// <param name="batchId">批次處理 ID</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    Task NotifyUIRecoveryCompleted(Guid batchId, CancellationToken cancellationToken = default);
 }

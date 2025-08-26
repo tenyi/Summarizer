@@ -95,6 +95,7 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped<IBatchProgressNotificationService, BatchProgressNotificationService>();
 builder.Services.AddScoped<ICancellationService, CancellationService>();
 builder.Services.AddScoped<IPartialResultHandler, PartialResultHandler>();
+builder.Services.AddScoped<ISystemRecoveryService, SystemRecoveryService>();
 
 // 註冊錯誤分類和處理服務
 builder.Services.AddScoped<IErrorClassificationService, ErrorClassificationService>();
