@@ -24,6 +24,8 @@ public class SummarizeControllerTests
     private readonly ISummaryRepository _summaryRepository;
     private readonly ITextSegmentationService _textSegmentationService;
     private readonly IBatchSummaryProcessingService _batchProcessingService;
+    private readonly ICancellationService _cancellationService;
+    private readonly ISystemRecoveryService _systemRecoveryService;
     private readonly SummarizeController _controller;
 
     public SummarizeControllerTests()
@@ -35,8 +37,10 @@ public class SummarizeControllerTests
         _summaryRepository = A.Fake<ISummaryRepository>();
         _textSegmentationService = A.Fake<ITextSegmentationService>();
         _batchProcessingService = A.Fake<IBatchSummaryProcessingService>();
+        _cancellationService = A.Fake<ICancellationService>();
+        _systemRecoveryService = A.Fake<ISystemRecoveryService>();
         
-        _controller = new SummarizeController(_ollamaService, _openAiService, _textSegmentationService, _batchProcessingService, _configuration, _logger, _summaryRepository);
+        _controller = new SummarizeController(_ollamaService, _openAiService, _textSegmentationService, _batchProcessingService, _cancellationService, _systemRecoveryService, _configuration, _logger, _summaryRepository);
         
         // 設定 HttpContext
         _controller.ControllerContext = new ControllerContext

@@ -235,7 +235,7 @@ namespace Summarizer.Middleware
         /// <summary>
         /// 備用錯誤處理（當主要錯誤處理失敗時使用）
         /// </summary>
-        private async Task HandleFallbackError(HttpContext context, Exception originalError, string correlationId)
+        private async Task HandleFallbackError(HttpContext context, Exception? originalError, string correlationId)
         {
             try
             {
