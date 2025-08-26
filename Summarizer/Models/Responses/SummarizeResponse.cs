@@ -40,35 +40,3 @@ public class SummarizeResponse
     /// </summary>
     public string? ErrorCode { get; set; }
 }
-
-/// <summary>
-/// 標準 API 回應格式
-/// </summary>
-/// <typeparam name="T">資料類型</typeparam>
-public class ApiResponse<T>
-{
-    /// <summary>
-    /// 操作是否成功
-    /// </summary>
-    public bool Success { get; set; }
-    
-    /// <summary>
-    /// 回應資料
-    /// </summary>
-    public T? Data { get; set; }
-    
-    /// <summary>
-    /// 錯誤訊息
-    /// </summary>
-    public string? Error { get; set; }
-    
-    /// <summary>
-    /// 錯誤代碼
-    /// </summary>
-    public string? ErrorCode { get; set; }
-    
-    /// <summary>
-    /// 時間戳
-    /// </summary>
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-}

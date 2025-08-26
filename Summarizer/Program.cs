@@ -17,12 +17,14 @@ using Summarizer.Configuration;
 using Summarizer.Models;
 using Summarizer.Services;
 using Summarizer.Services.Interfaces;
+using Summarizer.Services.SummaryMerging;
 using Summarizer.Repositories;
 using Summarizer.Repositories.Interfaces;
 using Summarizer.Data;
 using Summarizer.Middleware;
 using Sinotech.Mis.Extensions.Configuration;
 using Summarizer;
+using Summarizer.Services.ErrorHandling;
 
 // 建立 WebApplication 建構器，配置應用程式基礎設定
 // 這是 ASP.NET Core 應用程式的起始點，負責初始化和配置整個應用程式
@@ -62,6 +64,15 @@ builder.Services.Configure<FormOptions>(options =>
 builder.Services.Configure<OllamaConfig>(builder.Configuration.GetSection("OllamaApi"));
 builder.Services.Configure<OpenAiConfig>(builder.Configuration.GetSection("OpenAi"));
 
+// 配置文本分段服務設定
+builder.Services.Configure<TextSegmentationConfig>(builder.Configuration.GetSection(TextSegmentationConfig.SectionName));
+
+// 配置批次處理服務設定
+builder.Services.Configure<BatchProcessingConfig>(builder.Configuration.GetSection(BatchProcessingConfig.SectionName));
+
+// 配置摘要合併服務設定
+builder.Services.Configure<SummaryMergingConfig>(builder.Configuration.GetSection(SummaryMergingConfig.SectionName));
+
 // 註冊 HTTP 客戶端服務
 builder.Services.AddHttpClient<IOllamaSummaryService, OllamaSummaryService>();
 builder.Services.AddHttpClient<IOpenAiSummaryService, OpenAiSummaryService>();
@@ -69,6 +80,56 @@ builder.Services.AddHttpClient<IOpenAiSummaryService, OpenAiSummaryService>();
 // 註冊摘要服務
 builder.Services.AddScoped<IOllamaSummaryService, OllamaSummaryService>();
 builder.Services.AddScoped<IOpenAiSummaryService, OpenAiSummaryService>();
+
+// 註冊文本分段服務
+builder.Services.AddScoped<ITextSegmentationService, TextSegmentationService>();
+
+// 註冊批次處理服務
+builder.Services.AddScoped<IBatchSummaryProcessingService, BatchSummaryProcessingService>();
+builder.Services.AddSingleton<ConcurrencyController>();
+
+// 註冊 SignalR 服務
+builder.Services.AddSignalR();
+
+// 註冊批次處理進度通知服務
+builder.Services.AddScoped<IBatchProgressNotificationService, BatchProgressNotificationService>();
+builder.Services.AddScoped<ICancellationService, CancellationService>();
+builder.Services.AddScoped<IPartialResultHandler, PartialResultHandler>();
+
+// 註冊錯誤分類和處理服務
+builder.Services.AddScoped<IErrorClassificationService, ErrorClassificationService>();
+
+// 註冊錯誤處理策略服務
+builder.Services.AddScoped<IErrorHandlingStrategy, RetryStrategy>();
+builder.Services.AddScoped<IErrorHandlingStrategy, EscalateStrategy>();
+builder.Services.AddScoped<IErrorHandlingStrategy, UserGuidanceStrategy>();
+builder.Services.AddScoped<IErrorHandlingStrategy, RecoveryStrategy>();
+builder.Services.AddScoped<IErrorHandlingStrategy, FallbackStrategy>();
+builder.Services.AddScoped<IErrorHandlingStrategy, LogAndIgnoreStrategy>();
+builder.Services.AddScoped<IErrorHandlingStrategy, ImmediateStopStrategy>();
+
+// 註冊摘要合併服務
+builder.Services.AddScoped<ITextSimilarityCalculator, TextSimilarityCalculator>();
+builder.Services.AddScoped<IDuplicateContentDetector, DuplicateContentDetector>();
+builder.Services.AddScoped<IContentOptimizer, ContentOptimizer>();
+builder.Services.AddScoped<ISourceTrackingService, SourceTrackingService>();
+builder.Services.AddScoped<IMergeStrategySelector, MergeStrategySelector>();
+builder.Services.AddScoped<ILLMAssistedMergeService, LLMAssistedMergeService>();
+builder.Services.AddScoped<ISummaryMergerService, SummaryMergerService>();
+
+// 註冊通用摘要服務介面（用於文本分段服務中的 LLM 調用）
+builder.Services.AddScoped<ISummaryService>(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+    var aiProvider = configuration.GetValue<string>("AiProvider")?.ToLowerInvariant();
+    
+    return aiProvider switch
+    {
+        "openai" => provider.GetRequiredService<IOpenAiSummaryService>(),
+        "ollama" => provider.GetRequiredService<IOllamaSummaryService>(),
+        _ => provider.GetRequiredService<IOllamaSummaryService>() // 預設使用 Ollama
+    };
+});
 
 // 註冊 DbContext 服務，配置 SQLite 資料庫
 string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -209,6 +270,8 @@ app.UseAuthorization();
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
+    // 配置 SignalR Hub 路由
+    endpoints.MapHub<Summarizer.Hubs.BatchProcessingHub>("/batchprocessinghub");
 });
 #pragma warning restore ASP0014 // Suggest using top level route registrations
 

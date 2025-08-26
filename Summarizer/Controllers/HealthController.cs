@@ -21,7 +21,7 @@ namespace Summarizer.Controllers
         [HttpGet]
         public IActionResult Get()
         {
-            // 返回一個包含健康狀態的匿名物件，HTTP 狀態碼為 200 OK。
+            // 返回一個包含健康狀態的物件，HTTP 狀態碼為 200 OK。
             return Ok(new { status = "healthy", time = DateTime.UtcNow });
         }
     }

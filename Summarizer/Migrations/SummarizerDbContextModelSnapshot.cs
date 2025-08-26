@@ -17,6 +17,77 @@ namespace Summarizer.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.17");
 
+            modelBuilder.Entity("Summarizer.Models.BatchProcessing.PartialResult", b =>
+                {
+                    b.Property<Guid>("PartialResultId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("AcceptedTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("BatchId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CancellationTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompletedSegments")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("CompletionPercentage")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("OriginalTextSample")
+                        .IsRequired()
+                        .HasMaxLength(5000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PartialSummary")
+                        .IsRequired()
+                        .HasMaxLength(50000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<TimeSpan>("ProcessingTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Quality")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TotalSegments")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("UserAccepted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("UserComment")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("PartialResultId");
+
+                    b.HasIndex("BatchId");
+
+                    b.HasIndex("CancellationTime");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PartialResults");
+                });
+
             modelBuilder.Entity("Summarizer.Models.SummaryRecord", b =>
                 {
                     b.Property<int>("Id")
@@ -27,6 +98,7 @@ namespace Summarizer.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("OriginalLength")
@@ -34,6 +106,7 @@ namespace Summarizer.Migrations
 
                     b.Property<string>("OriginalText")
                         .IsRequired()
+                        .HasMaxLength(50000)
                         .HasColumnType("TEXT");
 
                     b.Property<double>("ProcessingTimeMs")
@@ -44,9 +117,11 @@ namespace Summarizer.Migrations
 
                     b.Property<string>("SummaryText")
                         .IsRequired()
+                        .HasMaxLength(10000)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UserId")
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

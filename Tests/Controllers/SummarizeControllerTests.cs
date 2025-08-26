@@ -22,6 +22,8 @@ public class SummarizeControllerTests
     private readonly IConfiguration _configuration;
     private readonly ILogger<SummarizeController> _logger;
     private readonly ISummaryRepository _summaryRepository;
+    private readonly ITextSegmentationService _textSegmentationService;
+    private readonly IBatchSummaryProcessingService _batchProcessingService;
     private readonly SummarizeController _controller;
 
     public SummarizeControllerTests()
@@ -31,8 +33,10 @@ public class SummarizeControllerTests
         _configuration = A.Fake<IConfiguration>();
         _logger = A.Fake<ILogger<SummarizeController>>();
         _summaryRepository = A.Fake<ISummaryRepository>();
+        _textSegmentationService = A.Fake<ITextSegmentationService>();
+        _batchProcessingService = A.Fake<IBatchSummaryProcessingService>();
         
-        _controller = new SummarizeController(_ollamaService, _openAiService, _configuration, _logger, _summaryRepository);
+        _controller = new SummarizeController(_ollamaService, _openAiService, _textSegmentationService, _batchProcessingService, _configuration, _logger, _summaryRepository);
         
         // 設定 HttpContext
         _controller.ControllerContext = new ControllerContext
