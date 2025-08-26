@@ -82,37 +82,37 @@ public class PartialResultHandler : IPartialResultHandler
     }
 
     /// <summary>
-    /// 收集已完成的分段結果
+    /// 收集已完成的分段任務
     /// </summary>
-    public async Task<List<SegmentSummaryTask>> CollectCompletedSegmentsAsync(
-        List<SegmentSummaryTask> allTasks,
-        CancellationToken cancellationToken = default)
-    {
-        try
+        public Task<List<SegmentSummaryTask>> CollectCompletedSegmentsAsync(
+            List<SegmentSummaryTask> allTasks,
+            CancellationToken cancellationToken = default)
         {
-            if (allTasks == null || !allTasks.Any())
+            try
             {
-                _logger.LogWarning("沒有可用的任務列表");
-                return new List<SegmentSummaryTask>();
+                if (allTasks == null || !allTasks.Any())
+                {
+                    _logger.LogWarning("沒有可用的任務列表");
+                    return Task.FromResult(new List<SegmentSummaryTask>());
+                }
+
+                // 篩選已完成且有結果的分段
+                var completedSegments = allTasks
+                    .Where(task => task.Status == SegmentTaskStatus.Completed && 
+                                  !string.IsNullOrWhiteSpace(task.SummaryResult))
+                    .OrderBy(task => task.SegmentIndex)
+                    .ToList();
+
+                _logger.LogInformation("收集到 {Count} 個已完成的分段", completedSegments.Count);
+
+                return Task.FromResult(completedSegments);
             }
-
-            // 篩選已完成且有結果的分段
-            var completedSegments = allTasks
-                .Where(task => task.Status == SegmentTaskStatus.Completed && 
-                              !string.IsNullOrWhiteSpace(task.SummaryResult))
-                .OrderBy(task => task.SegmentIndex)
-                .ToList();
-
-            _logger.LogInformation("收集到 {Count} 個已完成的分段", completedSegments.Count);
-
-            return completedSegments;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "收集已完成分段時發生錯誤");
+                return Task.FromResult(new List<SegmentSummaryTask>());
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "收集已完成分段時發生錯誤");
-            return new List<SegmentSummaryTask>();
-        }
-    }
 
     /// <summary>
     /// 評估部分結果的品質

@@ -94,11 +94,11 @@ namespace Summarizer.Services
         /// <summary>
         /// 根據錯誤分類決定處理策略
         /// </summary>
-        /// <param name="error">錯誤資訊</param>
-        /// <returns>建議的處理策略</returns>
-        public async Task<ErrorHandlingStrategy> DetermineHandlingStrategyAsync(ProcessingError error)
+        /// <param name="error">處理錯誤</param>
+        /// <returns>錯誤處理策略</returns>
+        public Task<ErrorHandlingStrategy> DetermineHandlingStrategyAsync(ProcessingError error)
         {
-            return error.Category switch
+            var strategy = error.Category switch
             {
                 ErrorCategory.Validation => ErrorHandlingStrategy.UserGuidance,
                 ErrorCategory.Authentication => ErrorHandlingStrategy.UserGuidance,
@@ -120,6 +120,8 @@ namespace Summarizer.Services
                 ErrorCategory.Timeout => ErrorHandlingStrategy.Retry,
                 _ => ErrorHandlingStrategy.LogAndIgnore
             };
+
+            return Task.FromResult(strategy);
         }
 
         /// <summary>
@@ -151,11 +153,11 @@ namespace Summarizer.Services
         }
 
         /// <summary>
-        /// 生成錯誤解決方案建議
+        /// 根據錯誤類型產生建議的處理動作
         /// </summary>
-        /// <param name="error">錯誤資訊</param>
-        /// <returns>解決方案建議列表</returns>
-        public async Task<List<string>> GenerateSuggestedActionsAsync(ProcessingError error)
+        /// <param name="error">處理錯誤</param>
+        /// <returns>建議動作清單</returns>
+        public Task<List<string>> GenerateSuggestedActionsAsync(ProcessingError error)
         {
             var actions = new List<string>();
 
@@ -167,7 +169,7 @@ namespace Summarizer.Services
                         "檢查輸入資料的格式和內容",
                         "確認所有必填欄位都已正確填寫",
                         "參考系統說明文件中的資料格式要求",
-                        "如有疑問請聯繫系統管理員"
+                        "如有疑問請聯絡系統管理員"
                     });
                     break;
 
@@ -177,7 +179,7 @@ namespace Summarizer.Services
                         "檢查網路連線狀態",
                         "重新整理頁面後再試",
                         "如果使用 VPN，請嘗試關閉後重試",
-                        "聯繫 IT 支援檢查網路設定"
+                        "聯絡 IT 支援檢查網路設定"
                     });
                     break;
 
@@ -186,7 +188,7 @@ namespace Summarizer.Services
                     {
                         "稍後再試（服務可能暫時不可用）",
                         "確認 AI 服務設定正確",
-                        "聯繫系統管理員檢查服務狀態",
+                        "聯絡系統管理員檢查服務狀態",
                         "嘗試使用備用服務（如可用）"
                     });
                     break;
@@ -199,14 +201,14 @@ namespace Summarizer.Services
                             "檢查是否有部分結果可以保留",
                             "考慮將文本分成較小的部分處理",
                             "重新開始處理",
-                            "如果問題持續，請聯繫技術支援"
+                            "如果問題持續，請聯絡技術支援"
                         });
                     }
                     else
                     {
                         actions.AddRange(new[]
                         {
-                            "記錄錯誤詳情並聯繫技術支援",
+                            "記錄錯誤詳情並聯絡技術支援",
                             "嘗試重新啟動應用程式",
                             "檢查系統資源使用狀況"
                         });
@@ -219,7 +221,7 @@ namespace Summarizer.Services
                         "檢查系統資源（記憶體、磁碟空間）",
                         "關閉不必要的應用程式",
                         "重新啟動系統",
-                        "聯繫 IT 支援進行系統檢查"
+                        "聯絡 IT 支援進行系統檢查"
                     });
                     break;
 
@@ -229,7 +231,7 @@ namespace Summarizer.Services
                         "減少文本長度後重試",
                         "稍後再試（系統可能正忙）",
                         "檢查網路連線穩定性",
-                        "聯繫系統管理員調整超時設定"
+                        "聯絡系統管理員調整超時設定"
                     });
                     break;
 
@@ -239,12 +241,12 @@ namespace Summarizer.Services
                         "重新整理頁面後重試",
                         "檢查是否有系統更新",
                         "記錄錯誤發生的步驟",
-                        "聯繫技術支援並提供錯誤詳情"
+                        "聯絡技術支援並提供錯誤詳情"
                     });
                     break;
             }
 
-            return actions;
+            return Task.FromResult(actions);
         }
 
         /// <summary>
@@ -253,8 +255,8 @@ namespace Summarizer.Services
         /// <param name="exception">例外資訊</param>
         /// <param name="context">內容資訊</param>
         /// <param name="batchId">相關的批次識別碼（可選）</param>
-        /// <returns>診斷資訊</returns>
-        public async Task<Dictionary<string, object>> CollectDiagnosticInfoAsync(
+        /// <returns>診斷資訊字典</returns>
+        public Task<Dictionary<string, object>> CollectDiagnosticInfoAsync(
             Exception exception, 
             string context, 
             Guid? batchId = null)
@@ -285,7 +287,7 @@ namespace Summarizer.Services
                 // 忽略記憶體資訊收集失敗
             }
 
-            // 添加安全的堆疊追蹤
+            // 添加安全的堆棧追蹤
             if (exception.StackTrace != null)
             {
                 diagnostics["StackTrace"] = SanitizeStackTrace(exception.StackTrace);
@@ -301,7 +303,7 @@ namespace Summarizer.Services
                 };
             }
 
-            return diagnostics;
+            return Task.FromResult(diagnostics);
         }
 
         /// <summary>
@@ -373,11 +375,10 @@ namespace Summarizer.Services
         }
 
         /// <summary>
-        /// 記錄錯誤到系統日誌
+        /// 記錄錯誤到日誌系統
         /// </summary>
-        /// <param name="error">錯誤資訊</param>
-        /// <returns>記錄操作任務</returns>
-        public async Task LogErrorAsync(ProcessingError error)
+        /// <param name="error">處理錯誤</param>
+        public Task LogErrorAsync(ProcessingError error)
         {
             var logLevel = error.Severity switch
             {
@@ -399,6 +400,7 @@ namespace Summarizer.Services
                 error.UserId);
 
             error.Logged = true;
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -557,9 +559,9 @@ namespace Summarizer.Services
 
         #region Strategy Implementation Methods
 
-        private async Task<ErrorHandlingResult> HandleRetryStrategyAsync(ProcessingError error)
+        private Task<ErrorHandlingResult> HandleRetryStrategyAsync(ProcessingError error)
         {
-            return new ErrorHandlingResult
+            var result = new ErrorHandlingResult
             {
                 Success = true,
                 Message = "已標記為可重試",
@@ -571,11 +573,12 @@ namespace Summarizer.Services
                     ["MaxRetries"] = error.MaxRetryAttempts
                 }
             };
+            return Task.FromResult(result);
         }
 
-        private async Task<ErrorHandlingResult> HandleEscalateStrategyAsync(ProcessingError error)
+        private Task<ErrorHandlingResult> HandleEscalateStrategyAsync(ProcessingError error)
         {
-            return new ErrorHandlingResult
+            var result = new ErrorHandlingResult
             {
                 Success = true,
                 Message = "已提交給系統管理員處理",
@@ -583,14 +586,15 @@ namespace Summarizer.Services
                 Data = new Dictionary<string, object>
                 {
                     ["EscalatedAt"] = DateTime.UtcNow,
-                    ["ContactInfo"] = "請聯繫系統管理員或技術支援"
+                    ["ContactInfo"] = "請聯絡系統管理員或技術支援"
                 }
             };
+            return Task.FromResult(result);
         }
 
-        private async Task<ErrorHandlingResult> HandleUserGuidanceStrategyAsync(ProcessingError error)
+        private Task<ErrorHandlingResult> HandleUserGuidanceStrategyAsync(ProcessingError error)
         {
-            return new ErrorHandlingResult
+            var result = new ErrorHandlingResult
             {
                 Success = true,
                 Message = "已提供使用者指導",
@@ -601,11 +605,12 @@ namespace Summarizer.Services
                     ["SuggestedActions"] = error.SuggestedActions
                 }
             };
+            return Task.FromResult(result);
         }
 
-        private async Task<ErrorHandlingResult> HandleRecoveryStrategyAsync(ProcessingError error)
+        private Task<ErrorHandlingResult> HandleRecoveryStrategyAsync(ProcessingError error)
         {
-            return new ErrorHandlingResult
+            var result = new ErrorHandlingResult
             {
                 Success = true,
                 Message = "已啟動恢復程序",
@@ -617,11 +622,12 @@ namespace Summarizer.Services
                     ["BatchId"] = error.BatchId?.ToString() ?? ""
                 }
             };
+            return Task.FromResult(result);
         }
 
-        private async Task<ErrorHandlingResult> HandleFallbackStrategyAsync(ProcessingError error)
+        private Task<ErrorHandlingResult> HandleFallbackStrategyAsync(ProcessingError error)
         {
-            return new ErrorHandlingResult
+            var result = new ErrorHandlingResult
             {
                 Success = true,
                 Message = "已切換到備援服務",
@@ -632,21 +638,23 @@ namespace Summarizer.Services
                     ["FallbackService"] = "備用 AI 服務"
                 }
             };
+            return Task.FromResult(result);
         }
 
-        private async Task<ErrorHandlingResult> HandleLogAndIgnoreStrategyAsync(ProcessingError error)
+        private Task<ErrorHandlingResult> HandleLogAndIgnoreStrategyAsync(ProcessingError error)
         {
-            return new ErrorHandlingResult
+            var result = new ErrorHandlingResult
             {
                 Success = true,
                 Message = "已記錄錯誤，繼續處理",
                 RequiresFurtherAction = false
             };
+            return Task.FromResult(result);
         }
 
-        private async Task<ErrorHandlingResult> HandleImmediateStopStrategyAsync(ProcessingError error)
+        private Task<ErrorHandlingResult> HandleImmediateStopStrategyAsync(ProcessingError error)
         {
-            return new ErrorHandlingResult
+            var result = new ErrorHandlingResult
             {
                 Success = true,
                 Message = "已立即停止所有相關操作",
@@ -657,6 +665,7 @@ namespace Summarizer.Services
                     ["Reason"] = "系統穩定性保護"
                 }
             };
+            return Task.FromResult(result);
         }
 
         private int GetRetryDelaySeconds(ProcessingError error)

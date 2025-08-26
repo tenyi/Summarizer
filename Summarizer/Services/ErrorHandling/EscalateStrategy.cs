@@ -238,10 +238,9 @@ namespace Summarizer.Services.ErrorHandling
         }
 
         /// <summary>
-        /// 保存部分結果
+        /// 保存部分結果（升級策略中記錄升級事件）
         /// </summary>
-        /// <param name="error">錯誤資訊</param>
-        private async Task SavePartialResultsAsync(ProcessingError error)
+        private Task SavePartialResultsAsync(ProcessingError error)
         {
             try
             {
@@ -256,6 +255,8 @@ namespace Summarizer.Services.ErrorHandling
             {
                 _logger.LogWarning(ex, "保存部分結果時發生異常，錯誤ID: {ErrorId}", error.ErrorId);
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>

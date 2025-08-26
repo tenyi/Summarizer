@@ -46,13 +46,13 @@ namespace Summarizer.Data
                 // 將複雜物件序列化為 JSON
                 entity.Property(e => e.CompletedSegments)
                     .HasConversion(
-                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
-                        v => JsonSerializer.Deserialize<List<SegmentSummaryTask>>(v, (JsonSerializerOptions)null) ?? new List<SegmentSummaryTask>());
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                        v => JsonSerializer.Deserialize<List<SegmentSummaryTask>>(v, (JsonSerializerOptions?)null) ?? new List<SegmentSummaryTask>());
 
                 entity.Property(e => e.Quality)
                     .HasConversion(
-                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
-                        v => JsonSerializer.Deserialize<PartialResultQuality>(v, (JsonSerializerOptions)null) ?? new PartialResultQuality());
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                        v => JsonSerializer.Deserialize<PartialResultQuality>(v, (JsonSerializerOptions?)null) ?? new PartialResultQuality());
 
                 // 索引設定
                 entity.HasIndex(e => e.UserId);

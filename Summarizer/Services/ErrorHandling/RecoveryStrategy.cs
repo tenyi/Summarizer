@@ -429,7 +429,7 @@ namespace Summarizer.Services.ErrorHandling
         }
 
         // 恢復操作的實際實作
-        private async Task SavePartialResultsAsync(ProcessingError error)
+        private Task SavePartialResultsAsync(ProcessingError error)
         {
             if (error.BatchId.HasValue)
             {
@@ -437,6 +437,8 @@ namespace Summarizer.Services.ErrorHandling
                 _logger.LogInformation("恢復策略執行 - 批次 {BatchId} 在 {Timestamp} 嘗試恢復",
                     error.BatchId.Value, DateTime.UtcNow);
             }
+            
+            return Task.CompletedTask;
         }
 
         private async Task CleanupResourcesAsync(ProcessingError error)

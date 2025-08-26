@@ -213,36 +213,38 @@ public class CancellationService : ICancellationService
     }
 
     /// <summary>
-    /// 記錄取消審核日誌
+    /// 記錄取消操作的審核日誌
     /// </summary>
-    private async Task LogCancellationAudit(Guid batchId, BatchProcessingContext context, CancellationResult result)
-    {
-        try
+        private Task LogCancellationAudit(Guid batchId, BatchProcessingContext context, CancellationResult result)
         {
-            var auditLog = new CancellationAuditLog
+            try
             {
-                BatchId = batchId,
-                UserId = context.CancellationRequest?.UserId ?? "System",
-                CancellationReason = context.CancellationRequest?.Reason ?? CancellationReason.SystemTimeout,
-                RequestTime = context.CancellationRequestTime ?? DateTime.UtcNow,
-                CompletionTime = result.ActualStopTime,
-                Success = result.Success,
-                Message = result.Message,
-                PartialResultsSaved = result.PartialResultsSaved,
-                GracefulShutdownDurationMs = result.GracefulShutdownDurationMs,
-                UserComment = context.CancellationRequest?.UserComment ?? string.Empty
-            };
+                var auditLog = new CancellationAuditLog
+                {
+                    BatchId = batchId,
+                    UserId = context.CancellationRequest?.UserId ?? "System",
+                    CancellationReason = context.CancellationRequest?.Reason ?? CancellationReason.SystemTimeout,
+                    RequestTime = context.CancellationRequestTime ?? DateTime.UtcNow,
+                    CompletionTime = result.ActualStopTime,
+                    Success = result.Success,
+                    Message = result.Message,
+                    PartialResultsSaved = result.PartialResultsSaved,
+                    GracefulShutdownDurationMs = result.GracefulShutdownDurationMs,
+                    UserComment = context.CancellationRequest?.UserComment ?? string.Empty
+                };
 
-            _logger.LogInformation("取消操作審核日誌: {@AuditLog}", auditLog);
-            
-            // 這裡可以將審核日誌寫入資料庫或其他持久化儲存
-            // await _auditRepository.SaveCancellationAuditAsync(auditLog);
+                _logger.LogInformation("取消操作審核日誌: {@AuditLog}", auditLog);
+                
+                // 這裡可以將審核日誌寫入資料庫或其他持久化儲存
+                // await _auditRepository.SaveCancellationAuditAsync(auditLog);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "記錄取消審核日誌失敗: {BatchId}", batchId);
+            }
+
+            return Task.CompletedTask;
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "記錄取消審核日誌失敗: {BatchId}", batchId);
-        }
-    }
 
     /// <summary>
     /// 清理批次處理資源

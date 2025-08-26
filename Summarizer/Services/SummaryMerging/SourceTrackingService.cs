@@ -6,7 +6,7 @@ using Summarizer.Configuration;
 using Summarizer.Models.BatchProcessing;
 using Summarizer.Models.SummaryMerging;
 using Summarizer.Services.Interfaces;
-
+using IssueSeverity = Summarizer.Models.SummaryMerging.IssueSeverity;
 namespace Summarizer.Services.SummaryMerging;
 
 /// <summary>

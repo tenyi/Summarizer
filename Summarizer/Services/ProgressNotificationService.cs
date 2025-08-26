@@ -269,28 +269,32 @@ public class ProgressNotificationService : IProgressNotificationService
         }
     }
 
-    public async Task<int> GetBatchGroupConnectionCountAsync(string batchId)
-    {
-        if (string.IsNullOrEmpty(batchId))
-            throw new ArgumentException("BatchId cannot be null or empty", nameof(batchId));
+    /// <summary>
+        /// 取得特定批次組的連線數量
+        /// </summary>
+        public Task<int> GetBatchGroupConnectionCountAsync(string batchId)
+        {
+            if (string.IsNullOrEmpty(batchId))
+                throw new ArgumentException("BatchId cannot be null or empty", nameof(batchId));
 
-        try
-        {
-            var groupName = $"batch_{batchId}";
-            
-            // 這裡需要實作實際的連線計數邏輯
-            // SignalR 本身沒有提供直接獲取群組成員數量的 API
-            // 可以通過維護自己的連線追蹤機制或使用 Redis 等外部存儲
-            
-            // 暫時返回緩存值或預設值
-            return _connectionCountCache.GetValueOrDefault(groupName, 0);
+            try
+            {
+                var groupName = $"batch_{batchId}";
+                
+                // 這裡需要實作實際的連線計數邏輯
+                // SignalR 本身沒有提供直接獲取群組成員數量的 API
+                // 可以通過維護自己的連線追蹤機制或使用 Redis 等外部存儲
+                
+                // 暫時返回緩存值或預設值
+                var count = _connectionCountCache.GetValueOrDefault(groupName, 0);
+                return Task.FromResult(count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get connection count for batch {BatchId}", batchId);
+                return Task.FromResult(0);
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get connection count for batch {BatchId}", batchId);
-            return 0;
-        }
-    }
 
     public async Task<bool> HasActiveBatchConnectionsAsync(string batchId)
     {

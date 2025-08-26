@@ -483,7 +483,7 @@ namespace Summarizer.Services.ErrorHandling
             };
         }
 
-        private async Task SaveCurrentStateAsync(ProcessingError error)
+        private Task SaveCurrentStateAsync(ProcessingError error)
         {
             try
             {
@@ -498,6 +498,8 @@ namespace Summarizer.Services.ErrorHandling
             {
                 _logger.LogWarning(ex, "保存當前狀態時發生異常，錯誤ID: {ErrorId}", error.ErrorId);
             }
+            
+            return Task.CompletedTask;
         }
 
         private static void RecordFallbackExecution(ProcessingError error, FallbackOption fallback, FallbackExecutionResult result)

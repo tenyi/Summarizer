@@ -121,7 +121,7 @@ public class ProgressCalculationService : IProgressCalculationService
             // 計算處理延遲統計
             var processingTimes = completedSegments
                 .Where(s => s.ProcessingTimeMs.HasValue)
-                .Select(s => (double)s.ProcessingTimeMs.Value)
+                .Select(s => (double)s.ProcessingTimeMs!.Value)
                 .ToList();
 
             if (processingTimes.Any())
@@ -211,7 +211,7 @@ public class ProgressCalculationService : IProgressCalculationService
         // 計算平均分段時間
         var completedSegments = segmentList.Where(s => s.Status == SegmentProcessingStatus.Completed);
         var avgTime = completedSegments.Any() 
-            ? completedSegments.Where(s => s.ProcessingTimeMs.HasValue).Average(s => (double)s.ProcessingTimeMs.Value)
+            ? completedSegments.Where(s => s.ProcessingTimeMs.HasValue).Average(s => (double)s.ProcessingTimeMs!.Value)
             : 0;
         currentProgress.AverageSegmentTimeMs = avgTime;
 

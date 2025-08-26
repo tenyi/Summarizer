@@ -223,7 +223,7 @@ namespace Summarizer.Services.ErrorHandling
             }
 
             // 記錄診斷資訊
-            if (error.DiagnosticInfo.Any())
+            if (error.DiagnosticInfo?.Any() == true)
             {
                 _logger.LogDebug("忽略錯誤的診斷資訊 - ID: {ErrorId}, 診斷資料: {@DiagnosticInfo}",
                     error.ErrorId, error.DiagnosticInfo);

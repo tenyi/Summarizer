@@ -225,10 +225,9 @@ namespace Summarizer.Services.ErrorHandling
         }
 
         /// <summary>
-        /// 執行緊急保存
+        /// 執行緊急保存程序
         /// </summary>
-        /// <param name="error">錯誤資訊</param>
-        private async Task ExecuteEmergencySaveAsync(ProcessingError error)
+        private Task ExecuteEmergencySaveAsync(ProcessingError error)
         {
             try
             {
@@ -247,6 +246,8 @@ namespace Summarizer.Services.ErrorHandling
             {
                 _logger.LogCritical(ex, "緊急保存失敗，錯誤ID: {ErrorId}，這可能導致資料丟失", error.ErrorId);
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
