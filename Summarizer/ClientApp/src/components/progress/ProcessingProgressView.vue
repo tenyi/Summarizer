@@ -10,15 +10,28 @@
     </div>
 
     <!-- 錯誤狀態顯示 -->
-    <div v-if="hasError && !isLoading" class="error-state">
-      <div class="error-icon">⚠️</div>
-      <h3 class="error-title">無法載入進度資訊</h3>
-      <p class="error-message">{{ errorMessage }}</p>
-      <div class="error-actions">
-        <button class="retry-btn" @click="retry">重試</button>
-        <button class="close-btn" @click="closeProgressView">關閉</button>
-      </div>
-    </div>
+    <StateTransition
+      :visible="hasError && !isLoading"
+      :state="'error'"
+      :effect="'shake'"
+      :show-background-effect="true"
+      :show-decorations="true"
+      :enable-animations="true"
+    >
+      <ErrorDisplay
+        :error="currentError"
+        :visible="hasError && !isLoading"
+        :variant="'card'"
+        :show-recovery-button="true"
+        :show-retry-button="true"
+        :show-suggestions="true"
+        :show-technical-details="false"
+        :auto-hide="false"
+        @retry="retry"
+        @recover="handleErrorRecover"
+        @close="closeProgressView"
+      />
+    </StateTransition>
 
     <!-- 主要進度內容 -->
     <div v-if="!isLoading && !hasError" class="progress-content">
@@ -164,14 +177,20 @@
             {{ isPaused ? '▶️ 繼續' : '⏸️ 暫停' }}
           </button>
 
-          <button
+          <!-- 使用新的取消按鈕元件 -->
+          <CancelButton
             v-if="canCancelProgress"
-            class="action-btn cancel-btn"
-            @click="confirmCancelProgress"
+            :variant="getCancelButtonVariant()"
+            :size="'md'"
+            :state="getCancelButtonState()"
             :disabled="progress.currentStage === 'completed' || progress.currentStage === 'failed'"
-          >
-            ❌ 取消
-          </button>
+            :show-progress="false"
+            :require-double-confirm="true"
+            :danger-mode="true"
+            @confirm="handleCancelConfirm"
+            @cancel="handleCancelCancel"
+            ref="cancelButtonRef"
+          />
 
           <button
             class="action-btn download-btn"
@@ -244,6 +263,32 @@
       @continue="handlePartialResultContinue"
       @close="handlePartialResultDialogClose"
     />
+
+    <!-- 錯誤恢復面板 -->
+    <StateTransition
+      :visible="showErrorRecoveryPanel"
+      :state="'recovering'"
+      :effect="'slide'"
+      :direction="'up'"
+      :show-background-effect="true"
+      :show-decorations="false"
+      :enable-animations="true"
+    >
+      <ErrorRecoveryPanel
+        :visible="showErrorRecoveryPanel"
+        :error="currentError"
+        :can-retry="true"
+        :can-recover="true"
+        :is-retry-recommended="currentError?.isRecoverable || false"
+        :is-recovery-recommended="true"
+        :show-recovery-steps="true"
+        @close="showErrorRecoveryPanel = false"
+        @retry="handleRecoveryRetry"
+        @recover="handleRecoveryRecover"
+        @manual-intervention="handleManualIntervention"
+        @download-log="handleDownloadLog"
+      />
+    </StateTransition>
   </div>
 </template>
 
@@ -258,6 +303,7 @@ import type {
   StageDefinition,
   PartialResult 
 } from '@/types/progress'
+import type { ProcessingError } from './ErrorDisplay.vue'
 import { DEFAULT_STAGE_DEFINITIONS } from '@/types/progress'
 
 import ProcessingStageIndicator from './ProcessingStageIndicator.vue'
@@ -266,6 +312,10 @@ import SegmentStatusList from './SegmentStatusList.vue'
 import TimeEstimationPanel from './TimeEstimationPanel.vue'
 import CancelConfirmationDialog from './CancelConfirmationDialog.vue'
 import PartialResultPreviewDialog from './PartialResultPreviewDialog.vue'
+import CancelButton from './CancelButton.vue'
+import ErrorDisplay from './ErrorDisplay.vue'
+import ErrorRecoveryPanel from './ErrorRecoveryPanel.vue'
+import StateTransition from './StateTransition.vue'
 
 // Props 定義
 interface Props {
@@ -315,6 +365,11 @@ const isLoading = ref(true)
 const hasError = ref(false)
 const errorMessage = ref('')
 const loadingText = ref('載入進度資訊...')
+
+// 錯誤相關狀態
+const currentError = ref<ProcessingError | null>(null)
+const showErrorRecoveryPanel = ref(false)
+const cancelButtonRef = ref()
 
 const progress = ref<ProcessingProgress>(
   props.initialProgress || {} as ProcessingProgress
@@ -472,6 +527,10 @@ const initializeProgressView = async () => {
   } catch (error) {
     hasError.value = true
     errorMessage.value = error instanceof Error ? error.message : '未知錯誤'
+    
+    // 創建結構化的錯誤物件供 ErrorDisplay 使用
+    currentError.value = createErrorFromMessage(errorMessage.value)
+    
     emit('error', error instanceof Error ? error : new Error(String(error)))
   } finally {
     isLoading.value = false
@@ -704,6 +763,118 @@ const formatRelativeTime = (date: Date): string => {
   if (diff < 60000) return '剛剛'
   if (diff < 3600000) return `${Math.floor(diff / 60000)} 分鐘前`
   return `${Math.floor(diff / 3600000)} 小時前`
+}
+
+// 新增的取消按鈕相關方法
+const getCancelButtonVariant = (): 'danger' => {
+  return 'danger'
+}
+
+const getCancelButtonState = () => {
+  if (isProcessingPartialResult.value) return 'loading'
+  return 'idle'
+}
+
+const handleCancelConfirm = () => {
+  // 直接處理取消邏輯，不需要顯示對話框
+  showCancelDialog.value = false
+  processPartialResult()
+}
+
+const handleCancelCancel = () => {
+  // 取消按鈕的取消操作 - 重置狀態
+  if (cancelButtonRef.value) {
+    cancelButtonRef.value.reset()
+  }
+}
+
+// 錯誤處理相關方法
+const handleErrorRecover = (error: ProcessingError) => {
+  showErrorRecoveryPanel.value = true
+  currentError.value = error
+}
+
+const createErrorFromMessage = (message: string): ProcessingError => {
+  return {
+    userFriendlyMessage: message,
+    errorMessage: message,
+    severity: 'error',
+    isRecoverable: true,
+    suggestedActions: [
+      '檢查網路連線狀態',
+      '重新整理頁面',
+      '稍後再試',
+      '聯繫系統管理員'
+    ],
+    errorContext: {
+      timestamp: new Date().toISOString(),
+      component: 'ProcessingProgressView'
+    }
+  }
+}
+
+// ErrorRecoveryPanel 事件處理方法
+const handleRecoveryRetry = async (error: ProcessingError | null) => {
+  if (!error) return
+  
+  try {
+    showErrorRecoveryPanel.value = false
+    hasError.value = false
+    await initializeProgressView()
+  } catch (err) {
+    console.error('重試失敗:', err)
+  }
+}
+
+const handleRecoveryRecover = async (error: ProcessingError | null) => {
+  if (!error) return
+  
+  try {
+    // 執行系統恢復邏輯
+    const { default: apiClient } = await import('@/api')
+    await apiClient.post(`/api/system/recover/${props.batchId}`)
+    
+    showErrorRecoveryPanel.value = false
+    hasError.value = false
+    await initializeProgressView()
+  } catch (err) {
+    console.error('系統恢復失敗:', err)
+  }
+}
+
+const handleManualIntervention = (error: ProcessingError) => {
+  // 可以開啟外部連結或顯示聯繫資訊
+  const supportUrl = 'mailto:support@company.com?subject=Processing Error&body=' + 
+    encodeURIComponent(`錯誤ID: ${error.errorId || 'N/A'}\n錯誤訊息: ${error.errorMessage || error.userFriendlyMessage}\n批次ID: ${props.batchId}`)
+  
+  window.open(supportUrl, '_blank')
+}
+
+const handleDownloadLog = (error: ProcessingError) => {
+  // 生成錯誤日誌報告並下載
+  const logData = {
+    timestamp: new Date().toISOString(),
+    batchId: props.batchId,
+    error: error,
+    progress: progress.value,
+    systemInfo: {
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      viewport: `${window.innerWidth}x${window.innerHeight}`
+    }
+  }
+  
+  const blob = new Blob([JSON.stringify(logData, null, 2)], { 
+    type: 'application/json' 
+  })
+  
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `error-log-${props.batchId}-${Date.now()}.json`
+  a.click()
+  
+  URL.revokeObjectURL(url)
 }
 
 // 生命週期

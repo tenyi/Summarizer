@@ -246,6 +246,239 @@ export interface ContentCoverage {
   coverageGaps: number;
 }
 
+// ===== 取消操作相關類型 =====
+
+/**
+ * 取消請求介面
+ */
+export interface CancellationRequest {
+  batchId: string;
+  reason: CancellationReason;
+  savePartialResults: boolean;
+  requestedBy: string;
+  requestedAt: string; // ISO 日期字串
+  additionalContext?: Record<string, any>;
+}
+
+/**
+ * 取消結果介面
+ */
+export interface CancellationResult {
+  isSuccessful: boolean;
+  reason: CancellationReason;
+  cancelledAt: string; // ISO 日期字串
+  partialResults?: PartialResult[];
+  completedSegmentCount: number;
+  totalSegmentCount: number;
+  processingTimeBeforeCancellation: string; // TimeSpan 字串
+  errorMessage?: string;
+  cleanupCompleted: boolean;
+  auditLogEntryId: string;
+}
+
+/**
+ * 取消原因枚舉
+ */
+export enum CancellationReason {
+  UserRequested = 'UserRequested',
+  Timeout = 'Timeout', 
+  SystemError = 'SystemError',
+  ResourceExhaustion = 'ResourceExhaustion',
+  BatchNotFound = 'BatchNotFound',
+  AlreadyCompleted = 'AlreadyCompleted',
+  InvalidState = 'InvalidState'
+}
+
+// ===== 錯誤處理相關類型 =====
+
+/**
+ * 處理錯誤介面
+ */
+export interface ProcessingError {
+  errorId: string;
+  title: string;
+  userFriendlyMessage: string;
+  errorMessage: string;
+  errorCode: string;
+  severity: ErrorSeverity;
+  category?: ErrorCategory;
+  isRecoverable: boolean;
+  suggestedActions: string[];
+  errorContext?: Record<string, any>;
+  timestamp: string; // ISO 日期字串
+  retryCount: number;
+}
+
+/**
+ * 錯誤嚴重程度枚舉
+ */
+export enum ErrorSeverity {
+  Low = 'Low',
+  Medium = 'Medium', 
+  High = 'High',
+  Critical = 'Critical'
+}
+
+/**
+ * 錯誤類別枚舉
+ */
+export enum ErrorCategory {
+  Network = 'Network',
+  Authentication = 'Authentication',
+  Authorization = 'Authorization',
+  Validation = 'Validation',
+  Processing = 'Processing',
+  Resource = 'Resource',
+  Configuration = 'Configuration',
+  External = 'External',
+  System = 'System'
+}
+
+// ===== 系統恢復相關類型 =====
+
+/**
+ * 系統恢復結果介面
+ */
+export interface SystemRecoveryResult {
+  isSuccessful: boolean;
+  recoverySteps: RecoveryStep[];
+  totalSteps: number;
+  completedSteps: number;
+  recoveryTimeMs: number;
+  recoveredAt: string; // ISO 日期字串
+  errorMessage?: string;
+  batchStateCleared: boolean;
+  resourcesReleased: boolean;
+  uiStateReset: boolean;
+  performanceMetrics?: PerformanceMetrics;
+}
+
+/**
+ * 恢復步驟介面
+ */
+export interface RecoveryStep {
+  stepName: string;
+  description: string;
+  isCompleted: boolean;
+  executionTimeMs?: number;
+  errorMessage?: string;
+  order: number;
+}
+
+/**
+ * 恢復原因類型
+ */
+export type RecoveryReason = 
+  | 'UserRequested'
+  | 'SystemError'
+  | 'ErrorRecovery'
+  | 'SystemFailure'
+  | 'ResourceExhaustion'
+  | 'MaintenanceMode'
+  | 'DataCorruption'
+  | 'ConfigurationChange';
+
+/**
+ * 系統健康檢查結果介面
+ */
+export interface SystemHealthCheckResult {
+  isHealthy: boolean;
+  overallStatus: SystemHealthStatus;
+  componentChecks: ComponentHealthCheck[];
+  issues: string[];
+  checkedAt: string; // ISO 日期字串
+  totalCheckTimeMs: number;
+  performanceMetrics?: PerformanceMetrics;
+}
+
+/**
+ * 系統健康狀態枚舉
+ */
+export enum SystemHealthStatus {
+  Healthy = 'Healthy',
+  Warning = 'Warning',
+  Degraded = 'Degraded',
+  Critical = 'Critical',
+  Unknown = 'Unknown'
+}
+
+/**
+ * 元件健康檢查介面
+ */
+export interface ComponentHealthCheck {
+  componentName: string;
+  isHealthy: boolean;
+  status: SystemHealthStatus;
+  checkDurationMs: number;
+  issues: string[];
+  details?: Record<string, any>;
+}
+
+/**
+ * 自我修復結果介面
+ */
+export interface SelfRepairResult {
+  isSuccessful: boolean;
+  repairedIssues: string[];
+  unableToRepair: string[];
+  repairActions: RepairAction[];
+  totalRepairTimeMs: number;
+  repairedAt: string; // ISO 日期字串
+  needsManualIntervention: boolean;
+  recommendations: string[];
+}
+
+/**
+ * 修復動作介面
+ */
+export interface RepairAction {
+  actionName: string;
+  description: string;
+  isSuccessful: boolean;
+  executionTimeMs: number;
+  errorMessage?: string;
+  category: RepairCategory;
+}
+
+/**
+ * 修復類別枚舉
+ */
+export enum RepairCategory {
+  Performance = 'Performance',
+  Resource = 'Resource',
+  Connection = 'Connection',
+  Data = 'Data',
+  Configuration = 'Configuration',
+  Process = 'Process'
+}
+
+/**
+ * 恢復狀態介面
+ */
+export interface RecoveryStatus {
+  batchId: string;
+  isInProgress: boolean;
+  currentStep: string;
+  progress: number; // 0-100
+  startedAt?: string; // ISO 日期字串
+  estimatedCompletionTime?: string; // ISO 日期字串
+  lastUpdated: string; // ISO 日期字串
+  error?: string;
+}
+
+/**
+ * 效能指標介面
+ */
+export interface PerformanceMetrics {
+  cpuUsagePercentage: number;
+  memoryUsageMB: number;
+  diskUsagePercentage: number;
+  errorRate: number;
+  averageResponseTimeMs: number;
+  throughput: number;
+  measuredAt: string; // ISO 日期字串
+}
+
 /**
  * 預設階段定義
  */

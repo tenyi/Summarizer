@@ -23,6 +23,8 @@ public class SummarizeController : ControllerBase
     private readonly IOpenAiSummaryService _openAiService;
     private readonly ITextSegmentationService _segmentationService;
     private readonly IBatchSummaryProcessingService _batchProcessingService;
+    private readonly ICancellationService _cancellationService;
+    private readonly ISystemRecoveryService _systemRecoveryService;
     private readonly IConfiguration _configuration;
     private readonly ILogger<SummarizeController> _logger;
     private readonly ISummaryRepository _summaryRepository;
@@ -32,6 +34,8 @@ public class SummarizeController : ControllerBase
         IOpenAiSummaryService openAiService,
         ITextSegmentationService segmentationService,
         IBatchSummaryProcessingService batchProcessingService,
+        ICancellationService cancellationService,
+        ISystemRecoveryService systemRecoveryService,
         IConfiguration configuration,
         ILogger<SummarizeController> logger,
         ISummaryRepository summaryRepository)
@@ -40,6 +44,8 @@ public class SummarizeController : ControllerBase
         _openAiService = openAiService ?? throw new ArgumentNullException(nameof(openAiService));
         _segmentationService = segmentationService ?? throw new ArgumentNullException(nameof(segmentationService));
         _batchProcessingService = batchProcessingService ?? throw new ArgumentNullException(nameof(batchProcessingService));
+        _cancellationService = cancellationService ?? throw new ArgumentNullException(nameof(cancellationService));
+        _systemRecoveryService = systemRecoveryService ?? throw new ArgumentNullException(nameof(systemRecoveryService));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _summaryRepository = summaryRepository ?? throw new ArgumentNullException(nameof(summaryRepository));
@@ -852,7 +858,72 @@ public class SummarizeController : ControllerBase
     }
 
     /// <summary>
-    /// 取消批次處理
+    /// 取消批次處理（增強版本，支援部分結果保存）
+    /// </summary>
+    /// <param name="batchId">批次處理 ID</param>
+    /// <param name="request">取消請求參數</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>取消結果</returns>
+    [HttpPost("cancel/{batchId}")]
+    [AllowAnonymous]
+    [ProducesResponseType<CancellationResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CancelBatchProcessingAsync(
+        Guid batchId, 
+        [FromBody] CancellationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var correlationId = HttpContext.TraceIdentifier;
+        _logger.LogInformation("請求取消批次處理，相關 ID: {CorrelationId}，BatchId: {BatchId}，保存部分結果: {SavePartialResults}", 
+            correlationId, batchId, request.SavePartialResults);
+
+        // 驗證請求
+        if (request.BatchId != batchId)
+        {
+            return BadRequest(new ApiResponse<object>
+            {
+                Success = false,
+                Error = "請求中的 BatchId 與 URL 參數不符",
+                ErrorCode = "BATCH_ID_MISMATCH"
+            });
+        }
+
+        try
+        {
+            // 使用新的 CancellationService 執行取消操作
+            var cancellationResult = await _cancellationService.RequestCancellationAsync(request);
+            
+            if (!cancellationResult.Success)
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Success = false,
+                    Error = cancellationResult.Message ?? "無法取消批次處理",
+                    ErrorCode = "CANCELLATION_FAILED"
+                });
+            }
+
+            _logger.LogInformation("批次處理取消成功，相關 ID: {CorrelationId}，BatchId: {BatchId}，保存部分結果: {PartialResultsSaved}", 
+                correlationId, batchId, cancellationResult.PartialResultsSaved);
+
+            return Ok(cancellationResult);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "取消批次處理時發生錯誤，相關 ID: {CorrelationId}，BatchId: {BatchId}", correlationId, batchId);
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                Success = false,
+                Error = "系統內部錯誤",
+                ErrorCode = "INTERNAL_ERROR"
+            });
+        }
+    }
+
+    /// <summary>
+    /// 取消批次處理（簡化版本，保持向後相容性）
     /// </summary>
     /// <param name="batchId">批次處理 ID</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -861,20 +932,31 @@ public class SummarizeController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> CancelBatchProcessingAsync(Guid batchId, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> CancelBatchProcessingLegacyAsync(Guid batchId, CancellationToken cancellationToken = default)
     {
         var correlationId = HttpContext.TraceIdentifier;
-        _logger.LogInformation("請求取消批次處理，相關 ID: {CorrelationId}，BatchId: {BatchId}", correlationId, batchId);
+        _logger.LogInformation("請求取消批次處理（舊版API），相關 ID: {CorrelationId}，BatchId: {BatchId}", correlationId, batchId);
 
         try
         {
-            var success = await _batchProcessingService.CancelBatchProcessingAsync(batchId, cancellationToken);
-            if (!success)
+            // 使用預設設定建立取消請求
+            var request = new CancellationRequest
             {
-                return NotFound(new ApiResponse<object>
+                BatchId = batchId,
+                Reason = CancellationReason.UserRequested,
+                SavePartialResults = false,
+                UserId = "Legacy API",
+                RequestTime = DateTime.UtcNow
+            };
+
+            var cancellationResult = await _cancellationService.RequestCancellationAsync(request);
+            
+            if (!cancellationResult.Success)
+            {
+                return BadRequest(new ApiResponse<object>
                 {
                     Success = false,
-                    Error = "找不到指定的批次處理"
+                    Error = cancellationResult.Message ?? "無法取消批次處理"
                 });
             }
 
@@ -945,6 +1027,324 @@ public class SummarizeController : ControllerBase
             {
                 Success = false,
                 Error = "系統內部錯誤"
+            });
+        }
+    }
+
+    /// <summary>
+    /// 執行系統恢復
+    /// </summary>
+    /// <param name="batchId">批次處理 ID</param>
+    /// <param name="reason">恢復原因</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>系統恢復結果</returns>
+    [HttpPost("recovery/{batchId}")]
+    [AllowAnonymous]
+    [ProducesResponseType<SystemRecoveryResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RecoverSystemAsync(
+        Guid batchId, 
+        [FromQuery] RecoveryReason reason = RecoveryReason.ManualRecovery,
+        CancellationToken cancellationToken = default)
+    {
+        var correlationId = HttpContext.TraceIdentifier;
+        _logger.LogInformation("請求系統恢復，相關 ID: {CorrelationId}，BatchId: {BatchId}，恢復原因: {Reason}", 
+            correlationId, batchId, reason);
+
+        try
+        {
+            // 檢查批次是否需要恢復
+            var needsRecovery = await _systemRecoveryService.RequiresRecoveryAsync(batchId);
+            if (!needsRecovery)
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Success = false,
+                    Error = "指定的批次處理不需要恢復",
+                    ErrorCode = "NO_RECOVERY_NEEDED"
+                });
+            }
+
+            // 執行系統恢復
+            var recoveryResult = await _systemRecoveryService.RecoverSystemAsync(batchId, reason);
+
+            if (!recoveryResult.IsSuccess)
+            {
+                _logger.LogWarning("系統恢復失敗，相關 ID: {CorrelationId}，BatchId: {BatchId}", 
+                    correlationId, batchId);
+                
+                return BadRequest(new ApiResponse<object>
+                {
+                    Success = false,
+                    Error = "系統恢復失敗",
+                    ErrorCode = "RECOVERY_FAILED"
+                });
+            }
+
+            _logger.LogInformation("系統恢復成功，相關 ID: {CorrelationId}，BatchId: {BatchId}，恢復時間: {RecoveryTime}ms", 
+                correlationId, batchId, recoveryResult.Duration.TotalMilliseconds);
+
+            return Ok(recoveryResult);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "執行系統恢復時發生錯誤，相關 ID: {CorrelationId}，BatchId: {BatchId}", correlationId, batchId);
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                Success = false,
+                Error = "系統內部錯誤",
+                ErrorCode = "INTERNAL_ERROR"
+            });
+        }
+    }
+
+    /// <summary>
+    /// 執行系統健康檢查
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>健康檢查結果</returns>
+    [HttpGet("health/system")]
+    [AllowAnonymous]
+    [ProducesResponseType<SystemHealthCheckResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<SystemHealthCheckResult>(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> SystemHealthCheckAsync(CancellationToken cancellationToken = default)
+    {
+        var correlationId = HttpContext.TraceIdentifier;
+        _logger.LogDebug("執行系統健康檢查，相關 ID: {CorrelationId}", correlationId);
+
+        try
+        {
+            var healthResult = await _systemRecoveryService.PerformHealthCheckAsync();
+
+            if (healthResult.OverallStatus == HealthStatus.Healthy)
+            {
+                _logger.LogInformation("系統健康檢查通過，相關 ID: {CorrelationId}，整體狀態: {Status}", 
+                    correlationId, healthResult.OverallStatus);
+
+                return Ok(healthResult);
+            }
+            else
+            {
+                _logger.LogWarning("系統健康檢查發現問題，相關 ID: {CorrelationId}，整體狀態: {Status}，問題數量: {IssueCount}", 
+                    correlationId, healthResult.OverallStatus, healthResult.Issues.Count);
+
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, healthResult);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "執行系統健康檢查時發生錯誤，相關 ID: {CorrelationId}", correlationId);
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new SystemHealthCheckResult
+            {
+                OverallStatus = HealthStatus.Critical,
+                CheckedAt = DateTime.UtcNow,
+                Issues = new List<HealthIssue> 
+                { 
+                    new HealthIssue 
+                    { 
+                        Component = "HealthCheckSystem",
+                        Description = "健康檢查系統發生內部錯誤",
+                        Severity = IssueSeverity.Critical
+                    } 
+                }
+            });
+        }
+    }
+
+    /// <summary>
+    /// 執行系統自我修復
+    /// </summary>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>自我修復結果</returns>
+    [HttpPost("health/self-repair")]
+    [AllowAnonymous]
+    [ProducesResponseType<SelfRepairResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SelfRepairAsync(CancellationToken cancellationToken = default)
+    {
+        var correlationId = HttpContext.TraceIdentifier;
+        _logger.LogInformation("請求系統自我修復，相關 ID: {CorrelationId}", correlationId);
+
+        try
+        {
+            // 先執行健康檢查
+            var healthResult = await _systemRecoveryService.PerformHealthCheckAsync();
+            
+            if (healthResult.OverallStatus == HealthStatus.Healthy)
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Success = false,
+                    Error = "系統狀態良好，無需修復",
+                    ErrorCode = "NO_REPAIR_NEEDED"
+                });
+            }
+
+            // 執行自我修復
+            var repairResult = await _systemRecoveryService.PerformSelfRepairAsync(healthResult);
+
+            _logger.LogInformation("系統自我修復完成，相關 ID: {CorrelationId}，修復成功: {Success}，修復項目數: {RepairCount}", 
+                correlationId, repairResult.IsSuccess, repairResult.SuccessfulRepairs);
+
+            return Ok(repairResult);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "執行系統自我修復時發生錯誤，相關 ID: {CorrelationId}", correlationId);
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                Success = false,
+                Error = "系統內部錯誤",
+                ErrorCode = "INTERNAL_ERROR"
+            });
+        }
+    }
+
+    /// <summary>
+    /// 重置系統狀態
+    /// </summary>
+    /// <param name="batchId">批次處理 ID（可選）</param>
+    /// <param name="resetType">重置類型</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>重置結果</returns>
+    [HttpPost("reset")]
+    [AllowAnonymous]
+    [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetSystemStateAsync(
+        [FromQuery] Guid? batchId = null,
+        [FromQuery] string resetType = "ui",
+        CancellationToken cancellationToken = default)
+    {
+        var correlationId = HttpContext.TraceIdentifier;
+        _logger.LogInformation("請求重置系統狀態，相關 ID: {CorrelationId}，BatchId: {BatchId}，重置類型: {ResetType}", 
+            correlationId, batchId, resetType);
+
+        try
+        {
+            bool success = false;
+            string operationName = "";
+
+            switch (resetType.ToLowerInvariant())
+            {
+                case "ui":
+                    if (!batchId.HasValue)
+                    {
+                        return BadRequest(new ApiResponse<object>
+                        {
+                            Success = false,
+                            Error = "UI 狀態重置需要指定 BatchId",
+                            ErrorCode = "BATCH_ID_REQUIRED"
+                        });
+                    }
+                    success = await _systemRecoveryService.ResetUIStateAsync(batchId.Value);
+                    operationName = "UI 狀態重置";
+                    break;
+
+                case "batch":
+                    if (!batchId.HasValue)
+                    {
+                        return BadRequest(new ApiResponse<object>
+                        {
+                            Success = false,
+                            Error = "批次狀態重置需要指定 BatchId",
+                            ErrorCode = "BATCH_ID_REQUIRED"
+                        });
+                    }
+                    success = await _systemRecoveryService.CleanupBatchStateAsync(batchId.Value);
+                    operationName = "批次狀態清理";
+                    break;
+
+                case "resources":
+                    success = await _systemRecoveryService.ReleaseResourcesAsync(batchId);
+                    operationName = "系統資源釋放";
+                    break;
+
+                default:
+                    return BadRequest(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Error = "不支援的重置類型，可用選項：ui、batch、resources",
+                        ErrorCode = "INVALID_RESET_TYPE"
+                    });
+            }
+
+            if (!success)
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Success = false,
+                    Error = $"{operationName}失敗",
+                    ErrorCode = "RESET_FAILED"
+                });
+            }
+
+            _logger.LogInformation("{OperationName}成功，相關 ID: {CorrelationId}，BatchId: {BatchId}", 
+                operationName, correlationId, batchId);
+
+            return Ok(new ApiResponse<object>
+            {
+                Success = true,
+                Data = new { message = $"{operationName}成功" }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "重置系統狀態時發生錯誤，相關 ID: {CorrelationId}，BatchId: {BatchId}，重置類型: {ResetType}", 
+                correlationId, batchId, resetType);
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                Success = false,
+                Error = "系統內部錯誤",
+                ErrorCode = "INTERNAL_ERROR"
+            });
+        }
+    }
+
+    /// <summary>
+    /// 取得恢復狀態
+    /// </summary>
+    /// <param name="batchId">批次處理 ID</param>
+    /// <returns>恢復狀態</returns>
+    [HttpGet("recovery/{batchId}/status")]
+    [AllowAnonymous]
+    [ProducesResponseType<RecoveryStatus>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetRecoveryStatusAsync(Guid batchId)
+    {
+        var correlationId = HttpContext.TraceIdentifier;
+        _logger.LogDebug("查詢恢復狀態，相關 ID: {CorrelationId}，BatchId: {BatchId}", correlationId, batchId);
+
+        try
+        {
+            var recoveryStatus = await _systemRecoveryService.GetRecoveryStatusAsync(batchId);
+
+            if (recoveryStatus == RecoveryStatus.NotRequired)
+            {
+                return NotFound(new ApiResponse<object>
+                {
+                    Success = false,
+                    Error = "指定批次不需要恢復",
+                    ErrorCode = "RECOVERY_NOT_REQUIRED"
+                });
+            }
+
+            return Ok(recoveryStatus);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "查詢恢復狀態時發生錯誤，相關 ID: {CorrelationId}，BatchId: {BatchId}", correlationId, batchId);
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                Success = false,
+                Error = "系統內部錯誤",
+                ErrorCode = "INTERNAL_ERROR"
             });
         }
     }
