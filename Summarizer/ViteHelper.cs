@@ -153,7 +153,7 @@ namespace Summarizer
                 .Contains(port);
 
         /// <summary>
-        /// 如果 'node_modules' 不存在則執行 'npm install'
+        /// 如果 'node_modules' 不存在則執行 'bun install'
         /// </summary>
         /// <param name="sourcePath">源代碼路徑</param>
         private static void EnsureNodeModuleAlreadyInstalled(string sourcePath)
@@ -161,13 +161,13 @@ namespace Summarizer
             // 檢查 Node_Modules 是否存在
             if (!Directory.Exists(Path.Combine(sourcePath, "node_modules")))
             {
-                ViteLogger?.LogWarning($"找不到 node_modules，執行 npm install...");
+                ViteLogger?.LogWarning($"找不到 node_modules，執行 bun install...");
 
                 // 安裝 node modules
                 var ps = Process.Start(new ProcessStartInfo()
                 {
-                    FileName = PlatformIsWindows ? "cmd" : "npm",
-                    Arguments = $"{(PlatformIsWindows ? "/c npm " : "")}install",
+                    FileName = PlatformIsWindows ? "cmd" : "bun",
+                    Arguments = $"{(PlatformIsWindows ? "/c bun " : "")}install",
                     WorkingDirectory = sourcePath,
                     RedirectStandardError = true,
                     RedirectStandardInput = true,
@@ -175,7 +175,7 @@ namespace Summarizer
                     UseShellExecute = false,
                 });
                 ps?.WaitForExit();
-                ViteLogger?.LogWarning($"npm install 完成。");
+                ViteLogger?.LogWarning($"bun install 完成。");
             }
         }
 
@@ -250,8 +250,8 @@ namespace Summarizer
             var runningPort = $" -- --port {port}";
             var processInfo = new ProcessStartInfo
             {
-                FileName = PlatformIsWindows ? "cmd" : "npm",
-                Arguments = $"{(PlatformIsWindows ? "/c npm " : "")}run dev{runningPort}",
+                FileName = PlatformIsWindows ? "cmd" : "bun",
+                Arguments = $"{(PlatformIsWindows ? "/c bun " : "")}run dev{runningPort}",
                 WorkingDirectory = sourcePath,
                 RedirectStandardError = true,
                 RedirectStandardInput = true,
@@ -284,7 +284,7 @@ namespace Summarizer
                 catch (EndOfStreamException ex)
                 {
                     ViteLogger?.LogError(ex.ToString());
-                    tcs.SetException(new InvalidOperationException("'npm run dev' failed.", ex));
+                    tcs.SetException(new InvalidOperationException("'bun run dev' failed.", ex));
                 }
             });
 
@@ -301,7 +301,7 @@ namespace Summarizer
                 catch (EndOfStreamException ex)
                 {
                     ViteLogger?.LogError(ex.ToString());
-                    tcs.SetException(new InvalidOperationException("'npm run dev' failed.", ex));
+                    tcs.SetException(new InvalidOperationException("'bun run dev' failed.", ex));
                 }
             });
 

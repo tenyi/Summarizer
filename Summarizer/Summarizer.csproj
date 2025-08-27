@@ -53,8 +53,8 @@
     <Error Condition="'$(ErrorCode)' != '0'"
       Text="Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/, and then restart your command prompt or IDE." />
     <Message Importance="high"
-      Text="Restoring dependencies using 'npm'. This may take several minutes..." />
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
+      Text="Restoring dependencies using 'bun'. This may take several minutes..." />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="bun install" />
   </Target>
 
   <Target Name="BuildVue" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Release'">
@@ -65,15 +65,15 @@
     <Error Condition="'$(ErrorCode)' != '0'"
       Text="Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/, and then restart your command prompt or IDE." />
     <Message Importance="high"
-      Text="Restoring dependencies using 'npm'. This may take several minutes..." />
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
+      Text="Restoring dependencies using 'bun'. This may take several minutes..." />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="bun run build" />
   </Target>
 
   <Target Name="PublishRunVite" AfterTargets="ComputeFilesToPublish">
     <!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build --ssr"
+    <Exec WorkingDirectory="$(SpaRoot)" Command="bun install" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="bun run build" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="bun run build --ssr"
       Condition=" '$(BuildServerSideRenderer)' == 'true' " />
 
     <!-- Include the newly-built files in the publish output -->

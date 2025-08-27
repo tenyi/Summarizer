@@ -182,7 +182,7 @@ flowchart TD
 
    ```bash
    cd ClientApp
-   npm install
+   bun install
    ```
 
 5. **啟動開發服務器**
@@ -192,7 +192,7 @@ flowchart TD
    dotnet run
    
    # 前端 (在 ClientApp 目錄，另一個終端)
-   npm run dev
+   bun run dev
    ```
 
 ## 📊 類別圖
@@ -404,10 +404,10 @@ dotnet run
 
 # 前端建置
 cd ClientApp
-npm run build        # 生產建置
-npm run type-check   # TypeScript 檢查
-npm run lint         # 程式碼檢查
-npm run preview      # 建置預覽
+bun run build        # 生產建置
+bun run type-check   # TypeScript 檢查
+bun run lint         # 程式碼檢查
+bun run preview      # 建置預覽
 ```
 
 ### 程式碼結構
