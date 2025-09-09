@@ -32,6 +32,14 @@ public class ProgressCalculationService : IProgressCalculationService
         { ProcessingStage.Finalizing, 0.1 }
     };
 
+    /// <summary>
+    /// 計算整體進度百分比
+    /// </summary>
+    /// <param name="currentStage">當前處理階段</param>
+    /// <param name="stageProgress">當前階段的進度百分比 (0-100)</param>
+    /// <param name="completedSegments">已完成的分段數量</param>
+    /// <param name="totalSegments">總分段數量</param>
+    /// <returns>整體進度百分比 (0-100)</returns>
     public double CalculateOverallProgress(
         ProcessingStage currentStage,
         double stageProgress,
@@ -63,6 +71,14 @@ public class ProgressCalculationService : IProgressCalculationService
         return Math.Min(100.0, baseProgress + stageContribution);
     }
 
+    /// <summary>
+    /// 預估剩餘處理時間
+    /// </summary>
+    /// <param name="elapsedTimeMs">已耗費的時間（毫秒）</param>
+    /// <param name="completedSegments">已完成的分段數量</param>
+    /// <param name="totalSegments">總分段數量</param>
+    /// <param name="currentStage">當前處理階段</param>
+    /// <returns>預估剩餘時間（毫秒），如果無法預估則返回 null</returns>
     public long? EstimateRemainingTime(
         long elapsedTimeMs,
         int completedSegments,
@@ -91,6 +107,12 @@ public class ProgressCalculationService : IProgressCalculationService
         return (long)Math.Max(0, estimatedTime);
     }
 
+    /// <summary>
+    /// 計算處理速度統計
+    /// </summary>
+    /// <param name="segmentStatuses">分段狀態列表</param>
+    /// <param name="elapsedTimeMs">已耗費的時間（毫秒）</param>
+    /// <returns>處理速度統計資訊</returns>
     public ProcessingSpeed CalculateProcessingSpeed(
         IEnumerable<SegmentStatus> segmentStatuses,
         long elapsedTimeMs)
@@ -140,6 +162,14 @@ public class ProgressCalculationService : IProgressCalculationService
         return speed;
     }
 
+    /// <summary>
+    /// 計算指定階段的進度百分比
+    /// </summary>
+    /// <param name="stage">處理階段</param>
+    /// <param name="completedSegments">已完成的分段數量</param>
+    /// <param name="totalSegments">總分段數量</param>
+    /// <param name="currentSegmentProgress">當前分段的進度百分比 (0-100)</param>
+    /// <returns>階段進度百分比 (0-100)</returns>
     public double CalculateStageProgress(
         ProcessingStage stage,
         int completedSegments,
@@ -163,11 +193,22 @@ public class ProgressCalculationService : IProgressCalculationService
         return Math.Max(0, Math.Min(100, progress));
     }
 
+    /// <summary>
+    /// 取得指定階段的時間乘數
+    /// </summary>
+    /// <param name="stage">處理階段</param>
+    /// <returns>時間乘數，用於調整時間預估</returns>
     public double GetStageTimeMultiplier(ProcessingStage stage)
     {
         return _stageTimeMultipliers.GetValueOrDefault(stage, 1.0);
     }
 
+    /// <summary>
+    /// 更新處理進度資訊
+    /// </summary>
+    /// <param name="currentProgress">當前進度物件</param>
+    /// <param name="segmentStatuses">分段狀態列表</param>
+    /// <returns>更新後的進度物件</returns>
     public ProcessingProgress UpdateProgress(
         ProcessingProgress currentProgress,
         IEnumerable<SegmentStatus> segmentStatuses)

@@ -10,22 +10,38 @@ using Summarizer.Repositories.Interfaces;
 
 namespace Summarizer.Repositories
 {
+    /// <summary>
+    /// 摘要記錄儲存庫類別，提供摘要記錄的 CRUD 操作和資料庫健康檢查功能。
+    /// 實作了重試機制以處理資料庫操作的暫時性錯誤。
+    /// </summary>
     public class SummaryRepository : ISummaryRepository
     {
         private readonly SummarizerDbContext _context;
         private readonly ILogger<SummaryRepository> _logger;
 
+        /// <summary>
+        /// 初始化 SummaryRepository 實例。
+        /// </summary>
+        /// <param name="context">資料庫上下文物件</param>
+        /// <param name="logger">日誌記錄器</param>
         public SummaryRepository(SummarizerDbContext context, ILogger<SummaryRepository> logger)
         {
             _context = context;
             _logger = logger;
         }
 
+        /// <summary>
+        /// 非同步建立新的摘要記錄，並實作重試機制以處理資料庫更新異常。
+        /// </summary>
+        /// <param name="record">要建立的摘要記錄物件</param>
+        /// <returns>建立成功的摘要記錄</returns>
+        /// <exception cref="InvalidOperationException">當重試次數用盡仍無法建立記錄時拋出</exception>
         public async Task<SummaryRecord> CreateAsync(SummaryRecord record)
         {
-            const int maxRetries = 3;
-            const int baseDelayMs = 1000;
+            const int maxRetries = 3; // 最大重試次數
+            const int baseDelayMs = 1000; // 基礎延遲時間（毫秒）
 
+            // 實作指數退避重試機制
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
                 try
@@ -58,11 +74,18 @@ namespace Summarizer.Repositories
             throw new InvalidOperationException($"經過 {maxRetries} 次重試後仍無法建立摘要記錄");
         }
 
+        /// <summary>
+        /// 根據 ID 非同步查詢摘要記錄，並實作重試機制以處理查詢異常。
+        /// </summary>
+        /// <param name="id">摘要記錄的唯一識別碼</param>
+        /// <returns>找到的摘要記錄，若不存在則返回 null</returns>
+        /// <exception cref="InvalidOperationException">當重試次數用盡仍無法查詢記錄時拋出</exception>
         public async Task<SummaryRecord?> GetByIdAsync(int id)
         {
-            const int maxRetries = 3;
-            const int baseDelayMs = 500;
+            const int maxRetries = 3; // 最大重試次數
+            const int baseDelayMs = 500; // 基礎延遲時間（毫秒）
 
+            // 實作指數退避重試機制
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
                 try
@@ -89,11 +112,18 @@ namespace Summarizer.Repositories
             throw new InvalidOperationException($"經過 {maxRetries} 次重試後仍無法查詢記錄");
         }
 
+        /// <summary>
+        /// 非同步查詢最近建立的摘要記錄，並實作重試機制以處理查詢異常。
+        /// </summary>
+        /// <param name="count">要查詢的記錄數量，預設為 10</param>
+        /// <returns>最近建立的摘要記錄集合</returns>
+        /// <exception cref="InvalidOperationException">當重試次數用盡仍無法查詢記錄時拋出</exception>
         public async Task<IEnumerable<SummaryRecord>> GetRecentAsync(int count = 10)
         {
-            const int maxRetries = 3;
-            const int baseDelayMs = 500;
+            const int maxRetries = 3; // 最大重試次數
+            const int baseDelayMs = 500; // 基礎延遲時間（毫秒）
 
+            // 實作指數退避重試機制
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
                 try
@@ -124,11 +154,17 @@ namespace Summarizer.Repositories
             throw new InvalidOperationException($"經過 {maxRetries} 次重試後仍無法查詢記錄");
         }
 
+        /// <summary>
+        /// 非同步查詢最舊的摘要記錄，並實作重試機制以處理查詢異常。
+        /// </summary>
+        /// <returns>最舊的摘要記錄，若無記錄則返回 null</returns>
+        /// <exception cref="InvalidOperationException">當重試次數用盡仍無法查詢記錄時拋出</exception>
         public async Task<SummaryRecord?> GetOldestAsync()
         {
-            const int maxRetries = 3;
-            const int baseDelayMs = 500;
+            const int maxRetries = 3; // 最大重試次數
+            const int baseDelayMs = 500; // 基礎延遲時間（毫秒）
 
+            // 實作指數退避重試機制
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
                 try
@@ -158,11 +194,17 @@ namespace Summarizer.Repositories
             throw new InvalidOperationException($"經過 {maxRetries} 次重試後仍無法查詢最舊記錄");
         }
 
+        /// <summary>
+        /// 非同步查詢摘要記錄的總數量，並實作重試機制以處理查詢異常。
+        /// </summary>
+        /// <returns>摘要記錄的總數量</returns>
+        /// <exception cref="InvalidOperationException">當重試次數用盡仍無法查詢記錄總數時拋出</exception>
         public async Task<int> GetTotalCountAsync()
         {
-            const int maxRetries = 3;
-            const int baseDelayMs = 500;
+            const int maxRetries = 3; // 最大重試次數
+            const int baseDelayMs = 500; // 基礎延遲時間（毫秒）
 
+            // 實作指數退避重試機制
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
                 try
@@ -189,6 +231,10 @@ namespace Summarizer.Repositories
             throw new InvalidOperationException($"經過 {maxRetries} 次重試後仍無法查詢記錄總數");
         }
 
+        /// <summary>
+        /// 非同步執行資料庫健康檢查，驗證資料庫連接和基本查詢功能。
+        /// </summary>
+        /// <returns>若資料庫正常運作則返回 true，否則返回 false</returns>
         public async Task<bool> HealthCheckAsync()
         {
             try

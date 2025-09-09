@@ -40,6 +40,9 @@ public class OllamaSummaryServiceTests
         _service = new OllamaSummaryService(_httpClient, _config, _logger);
     }
 
+    /// <summary>
+    /// 測試構造函數在 HttpClient 為 null 時是否拋出 ArgumentNullException
+    /// </summary>
     [Fact]
     public void Constructor_WithNullHttpClient_ThrowsArgumentNullException()
     {
@@ -50,6 +53,9 @@ public class OllamaSummaryServiceTests
         Assert.Equal("httpClient", exception.ParamName);
     }
 
+    /// <summary>
+    /// 測試構造函數在 Config 為 null 時是否拋出 ArgumentNullException
+    /// </summary>
     [Fact]
     public void Constructor_WithNullConfig_ThrowsArgumentNullException()
     {
@@ -60,6 +66,9 @@ public class OllamaSummaryServiceTests
         Assert.Equal("config", exception.ParamName);
     }
 
+    /// <summary>
+    /// 測試構造函數在 Logger 為 null 時是否拋出 ArgumentNullException
+    /// </summary>
     [Fact]
     public void Constructor_WithNullLogger_ThrowsArgumentNullException()
     {
@@ -70,6 +79,9 @@ public class OllamaSummaryServiceTests
         Assert.Equal("logger", exception.ParamName);
     }
 
+    /// <summary>
+    /// 測試 SummarizeAsync 方法在輸入無效文本時是否拋出 ArgumentException
+    /// </summary>
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
@@ -81,6 +93,9 @@ public class OllamaSummaryServiceTests
             _service.SummarizeAsync(text!));
     }
 
+    /// <summary>
+    /// 測試 SummarizeAsync 方法在輸入有效文本時是否返回成功的摘要結果
+    /// </summary>
     [Fact]
     public async Task SummarizeAsync_WithValidText_ReturnsSuccessResponse()
     {
@@ -104,6 +119,9 @@ public class OllamaSummaryServiceTests
         Assert.Equal(expectedSummary, result);
     }
 
+    /// <summary>
+    /// 測試 IsHealthyAsync 方法在服務健康時是否返回 true
+    /// </summary>
     [Fact]
     public async Task IsHealthyAsync_WhenServiceIsHealthy_ReturnsTrue()
     {
@@ -123,6 +141,9 @@ public class OllamaSummaryServiceTests
         Assert.True(result);
     }
 
+    /// <summary>
+    /// 測試 IsHealthyAsync 方法在服務不健康時是否返回 false
+    /// </summary>
     [Fact]
     public async Task IsHealthyAsync_WhenServiceIsUnhealthy_ReturnsFalse()
     {
@@ -139,6 +160,9 @@ public class OllamaSummaryServiceTests
         Assert.False(result);
     }
 
+    /// <summary>
+    /// 測試 TestConnectionAsync 方法是否正確呼叫 IsHealthyAsync
+    /// </summary>
     [Fact]
     public async Task TestConnectionAsync_CallsIsHealthyAsync()
     {

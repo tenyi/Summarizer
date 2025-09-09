@@ -9,6 +9,9 @@ using Summarizer.Models;
 
 namespace Summarizer.Services
 {
+    /// <summary>
+    /// 定義資料庫初始化服務的介面  
+    /// </summary>
     public interface IDatabaseInitializationService
     {
         Task InitializeDatabaseAsync();
@@ -16,11 +19,25 @@ namespace Summarizer.Services
         Task<bool> IsDatabaseInitializedAsync();
     }
 
+    /// <summary>
+    /// 負責資料庫初始化和種子資料建立的服務
+    /// </summary>
     public class DatabaseInitializationService : IDatabaseInitializationService
     {
+        /// <summary>
+        /// 資料庫上下文，用於資料庫操作
+        /// </summary>
         private readonly SummarizerDbContext _context;
+        /// <summary>
+        /// 日誌記錄器，用於記錄服務操作
+        /// </summary>
         private readonly ILogger<DatabaseInitializationService> _logger;
 
+        /// <summary>
+        /// 初始化 DatabaseInitializationService 的新實例
+        /// </summary>
+        /// <param name="context">資料庫上下文</param>
+        /// <param name="logger">日誌記錄器</param>
         public DatabaseInitializationService(
             SummarizerDbContext context,
             ILogger<DatabaseInitializationService> logger)
@@ -45,7 +62,7 @@ namespace Summarizer.Services
                 var pendingMigrations = await _context.Database.GetPendingMigrationsAsync();
                 if (pendingMigrations.Any())
                 {
-                    _logger.LogInformation("執行待處理的資料庫遷移：{Migrations}", 
+                    _logger.LogInformation("執行待處理的資料庫遷移：{Migrations}",
                         string.Join(", ", pendingMigrations));
                     await _context.Database.MigrateAsync();
                 }
@@ -68,7 +85,7 @@ namespace Summarizer.Services
             {
                 // 檢查是否已有資料
                 var existingRecordCount = await _context.SummaryRecords.CountAsync();
-                
+
                 if (existingRecordCount > 0)
                 {
                     _logger.LogInformation("資料庫已有 {Count} 筆記錄，跳過種子資料建立", existingRecordCount);
